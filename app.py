@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
-
 videoCapture = cv2.VideoCapture(0)
 
 # Initialize plot
