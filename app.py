@@ -1,57 +1,81 @@
+import cv2
+import sys
+import time
+import tkinter as tk
+import PIL.Image, PIL.ImageTk
 import numpy as np
 import matplotlib.pyplot as plt
-import cv2
+from matplotlib import ticker
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-videoCapture = cv2.VideoCapture(0)
+from videoCapture import VideoCapture
+from canvas import Canvas
 
-# Initialize plot
-figure, axis = plt.subplots()
-axis.set_title('RGB Histogram')
-axis.set_xlabel('Bin')
-axis.set_ylabel('Frequency')
+class App(tk.Frame):
+    UPDATE_DELAY = 15
 
-# Initialize plot lines
-binCount = 16
-lineWidth = 4
-lineTransparency = 0.8
+    BIN_COUNT = 16
+    LINE_WIDTH = 4
+    LINE_TRANSPARENCY = 0.8
 
-redLine, = axis.plot(np.arange(binCount), np.zeros((binCount,)), c='r', lw=lineWidth, alpha=lineTransparency, label='Red')
-greenLine, = axis.plot(np.arange(binCount), np.zeros((binCount,)), c='g', lw=lineWidth, alpha=lineTransparency, label='Green')
-blueLine, = axis.plot(np.arange(binCount), np.zeros((binCount,)), c='b', lw=lineWidth, alpha=lineTransparency, label='Blue')
+    def __init__(self, parent, *args, **kwargs):
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.videoCapture = VideoCapture(0)
+        self.webcamCanvas = Canvas(self.parent, self.videoCapture)
 
-axis.set_xlim(0, binCount-1)
-axis.set_ylim(0, 1)
+        self.figure, axis = plt.subplots()
 
-axis.legend()
+        self.histogramCanvas = FigureCanvasTkAgg(self.figure, master=self.parent)
+        self.histogramCanvas.get_tk_widget().pack()
 
-plt.ion()
+        self.initializeRGBPlot(axis)
 
-plt.show()
+        self.updateFrame()
 
-# Grab, process, and display video frames
-while True:
-    isFrameRead, frame = videoCapture.read()
+    def updateFrame(self):
+        isFrameRead, frame = self.videoCapture.getFrame()
+        if isFrameRead:
+            self.webcamCanvasPhoto = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
+            self.webcamCanvas.createImage(0, 0, self.webcamCanvasPhoto, tk.NW)
+            self.updateHistogram(frame)
+        self.parent.after(self.UPDATE_DELAY, self.updateFrame)
 
-    if isFrameRead:
+    def updateHistogram(self, frame):
         # Normalize histograms based on number of pixels per frame
         pixelCount = np.prod(frame.shape[:2])
 
-        cv2.imshow('RGB', frame)
         b, g, r = cv2.split(frame)
 
-        redHistogram = cv2.calcHist([r], [0], None, [binCount], [0, 255]) / pixelCount
-        greenHistogram = cv2.calcHist([g], [0], None, [binCount], [0, 255]) / pixelCount
-        blueHistogram = cv2.calcHist([b], [0], None, [binCount], [0, 255]) / pixelCount
+        redHistogram = cv2.calcHist([r], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
+        greenHistogram = cv2.calcHist([g], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
+        blueHistogram = cv2.calcHist([b], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
 
-        redLine.set_ydata(redHistogram)
-        greenLine.set_ydata(greenHistogram)
-        blueLine.set_ydata(blueHistogram)
+        self.redLine.set_ydata(redHistogram)
+        self.greenLine.set_ydata(greenHistogram)
+        self.blueLine.set_ydata(blueHistogram)
 
-        figure.canvas.draw()
+        self.histogramCanvas.draw()
 
-        # Exit on q key pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    def initializeRGBPlot(self, axis):
+        # Initialize plot
+        axis.set_title('RGB Histogram')
+        axis.set_xlabel('Bin')
+        axis.set_ylabel('Frequency')
 
-videoCapture.release()
-cv2.destroyAllWindows()
+        # Initialize plot lines
+        self.redLine, = axis.plot(np.arange(self.BIN_COUNT), np.zeros((self.BIN_COUNT,)), c='r', lw=self.LINE_WIDTH, alpha=self.LINE_TRANSPARENCY, label='Red')
+        self.greenLine, = axis.plot(np.arange(self.BIN_COUNT), np.zeros((self.BIN_COUNT,)), c='g', lw=self.LINE_WIDTH, alpha=self.LINE_TRANSPARENCY, label='Green')
+        self.blueLine, = axis.plot(np.arange(self.BIN_COUNT), np.zeros((self.BIN_COUNT,)), c='b', lw=self.LINE_WIDTH, alpha=self.LINE_TRANSPARENCY, label='Blue')
+
+        axis.set_xlim(0, self.BIN_COUNT-1)
+        axis.set_ylim(0, 1)
+
+        axis.legend()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("OpenCV Webcam RGB Histogram")
+    root.resizable(0, 0)
+    App(root).pack(side="top", fill="both", expand=True)
+    root.mainloop()

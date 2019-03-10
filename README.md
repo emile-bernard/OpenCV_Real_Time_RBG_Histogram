@@ -29,6 +29,16 @@ Histograms contains:
 $ pip install opencv-python
 ```
 
+- Install tkinter
+```
+$ pip install tkinter
+```
+
+- Install pillow
+```
+$ pip install pillow
+```
+
 - Install matplotlib
 ```
 $ pip install matplotlib
