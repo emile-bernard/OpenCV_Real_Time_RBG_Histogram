@@ -2,7 +2,8 @@
 This project contains a basic python script to run opencv-python with a webcam stream and plot the RBG histogram.
 
 ## Previews
-
+![Preview1](./preview/Preview1.PNG?raw=true "Preview1")
+![Preview2](./preview/Preview2.PNG?raw=true "Preview2")
 
 ## How it work's
 Histograms are collected counts of data organized into a set of predefined bins.
