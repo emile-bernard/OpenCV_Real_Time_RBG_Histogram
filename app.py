@@ -12,7 +12,7 @@ from videoCapture import VideoCapture
 from canvas import Canvas
 
 class App(tk.Frame):
-    UPDATE_DELAY = 15
+    UPDATE_DELAY = 150
 
     BIN_COUNT = 16
     LINE_WIDTH = 4
@@ -44,18 +44,20 @@ class App(tk.Frame):
     def updateHistogram(self, frame):
         # Normalize histograms based on number of pixels per frame
         pixelCount = np.prod(frame.shape[:2])
-
         b, g, r = cv2.split(frame)
 
-        redHistogram = cv2.calcHist([r], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
-        greenHistogram = cv2.calcHist([g], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
-        blueHistogram = cv2.calcHist([b], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
+        redHistogram = self.getColorHistogram(r, pixelCount)
+        greenHistogram = self.getColorHistogram(g, pixelCount)
+        blueHistogram = self.getColorHistogram(b, pixelCount)
 
         self.redLine.set_ydata(redHistogram)
         self.greenLine.set_ydata(greenHistogram)
         self.blueLine.set_ydata(blueHistogram)
 
         self.histogramCanvas.draw()
+
+    def getColorHistogram(self, color, pixelCount):
+        return cv2.calcHist([color], [0], None, [self.BIN_COUNT], [0, 255]) / pixelCount
 
     def initializeRGBPlot(self, axis):
         # Initialize plot
